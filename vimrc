@@ -3,220 +3,140 @@ vim9script
 # =============================================================================
 # VIM CONFIGURATION (MacVim & Windows GVim)
 # =============================================================================
+# Designed for Vim 9 using pure Vim9script.
+# This configuration focuses on cross-platform stability, modern features 
+# (LSP, AI), and discoverable keybindings via Which-Key.
+# =============================================================================
 
-# ==========================================
-# 0. Bootstrapping vim-plug
-# ==========================================
-# Automatically download and install vim-plug if it's missing.
+# -----------------------------------------------------------------------------
+# 1. Fundamental Setup & Bootstrapping
+# -----------------------------------------------------------------------------
+
+# Detect platform and define the dynamic modifier key:
+# 'D' corresponds to the Command key on MacVim.
+# 'M' corresponds to the Alt key on Windows GVim.
+var mod = has("gui_macvim") ? 'D' : 'M'
+
+if has('win32')
+  # On Windows, pressing Alt normally focuses the menu bar. 
+  # We disable this to allow using <M-...> mappings for editor commands.
+  set winaltkeys=no
+endif
+
+# Automated vim-plug installation:
+# This ensures the configuration is self-contained and portable.
 var config_dir = expand('<sfile>:p:h')
 var plug_path = config_dir .. '/autoload/plug.vim'
 
 if !filereadable(plug_path)
-  echo "Downloading vim-plug..."
+  echo "Installing vim-plug..."
   mkdir(config_dir .. '/autoload', 'p')
   var url = 'https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
   if has('win32')
-    # Use PowerShell on Windows if curl is not available
     system($'powershell -Command "Invoke-WebRequest -Uri {url} -OutFile {plug_path}"')
   else
     system($'curl -fLo {plug_path} {url}')
   endif
-
-  # Trigger plugin installation on first startup after manager is downloaded
+  # Re-source vimrc after installation to initialize the plugin manager immediately.
   autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 
-# ==========================================
-# 1. Platform & Environment Detection
-# ==========================================
-# Use Command key (D) on Mac and Alt key (M) on Windows for GUI shortcuts
-var mod = has("gui_macvim") ? 'D' : 'M'
-
-if has('win32')
-  # Prevent Alt key from focusing the system menu in Windows GVim
-  set winaltkeys=no
-endif
-
-# ==========================================
+# -----------------------------------------------------------------------------
 # 2. Plugin Management (vim-plug)
-# ==========================================
-# All plugins are stored in the 'plugged' subdirectory
+# -----------------------------------------------------------------------------
+
 call plug#begin(config_dir .. '/plugged')
-  # --- UI & Core Components ---
-  Plug 'lambdalisue/vim-fern'              # Asynchronous project drawer
-  Plug 'lambdalisue/vim-fern-git-status'   # Git integration for Fern
-  Plug 'yegappan/lsp'                      # Native Vim LSP client (Vim9)
-  Plug 'ap/vim-buftabline'                 # Display buffers as tabs at the top
-  Plug 'qpkorr/vim-bufkill'                # Delete buffers without closing windows
+  # Project Navigation
+  Plug 'lambdalisue/vim-fern'              # Asynchronous file explorer
+  Plug 'lambdalisue/vim-fern-git-status'   # Git status indicators for Fern
   
-  # --- Navigation & Menus ---
-  Plug 'skywind3000/vim-quickui'           # UI engine for popups
-  Plug 'skywind3000/vim-navigator'         # Keybinding discovery menu (Leader menu)
+  # LSP & Code Intelligence
+  Plug 'yegappan/lsp'                      # Native Vim9 LSP client
+  
+  # UI Enhancements
+  Plug 'ap/vim-buftabline'                 # Buffers as tabs at the top
+  Plug 'qpkorr/vim-bufkill'                # Delete buffers without closing windows (:BD)
+  Plug 'markonm/traces.vim'                # Real-time preview for :substitute
+  
+  # Menus & Discovery
+  Plug 'liuchengxu/vim-which-key'          # Popup menu for keybinding discovery
   Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
   Plug 'junegunn/fzf.vim'
-  Plug 'markonm/traces.vim'                # Real-time preview for :substitute (Mac)
-
-  # --- Language Support ---
-  Plug 'fatih/vim-go'                      # Go development environment
-  Plug 'tpope/vim-commentary'              # Efficient commenting logic
   
-  # --- Git Workflow ---
-  Plug 'tpope/vim-fugitive'                # Git wrapper inside Vim
-
-  # --- AI & Modern Debugging ---
-  Plug 'github/copilot.vim'                # GitHub Copilot (AI Completion)
-  Plug 'DanBradbury/copilot-chat.vim'      # Interactive Copilot Chat window
-  Plug 'puremourning/vimspector'           # Multi-language graphical debugger
+  # Language Support & Tools
+  Plug 'fatih/vim-go'                      # Comprehensive Go support
+  Plug 'tpope/vim-commentary'              # Rapid code commenting
+  Plug 'tpope/vim-fugitive'                # Git wrapper extraordinaire
+  
+  # AI & Debugging
+  Plug 'github/copilot.vim'                # GitHub Copilot completion
+  Plug 'DanBradbury/copilot-chat.vim'      # Copilot Chat integration
+  Plug 'puremourning/vimspector'           # Graphical debugger (DAP)
 call plug#end()
 
+# -----------------------------------------------------------------------------
+# 3. Core Vim Settings
+# -----------------------------------------------------------------------------
 
-# ==========================================
-# 3. General Settings
-# ==========================================
-set nu rnu             # Hybrid line numbers (current: absolute, others: relative)
-set laststatus=2       # Always display the status line
-set updatetime=300     # Faster responsiveness for LSP and Copilot
-set visualbell t_vb=   # Silence audio and visual bells
+set nu rnu             # Hybrid line numbers: absolute for current, relative for others
+set laststatus=2       # Always show the status line for better visibility
+set updatetime=300     # Responsiveness tweak for LSP highlights and AI triggers
+set autoread           # Automatically reload files when changed externally
+
+# Silent Operation
+set visualbell t_vb=   # Disable annoying visual/audio beeps
 set novisualbell
 set belloff=all
 
-# --- IME switching (MacVim Specific) ---
-# Automatically switch input method to English when leaving Insert mode
-if has("gui_macvim")
-  set noimdisable
-  autocmd InsertEnter * set iminsert=1
-  autocmd InsertLeave * set iminsert=0
-  autocmd FocusGained * if mode() != 'i' && mode() != 'R' | set iminsert=0 | endif
-endif
+# Buffer Auto-Reload Logic:
+def SafeCheckTime()
+  # Avoid triggering reloads while in Command mode to prevent UI disruption.
+  if mode() == 'c' || &buftype != '' || expand('%') == '' | return | endif
+  checktime
+enddef
 
+augroup AutoReload
+  autocmd!
+  autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * SafeCheckTime()
+  autocmd FileChangedShellPost * echohl WarningMsg | echo "File updated externally" | echohl None
+augroup END
 
-# ==========================================
-# 4. UI & GUI Settings
-# ==========================================
-# Fallback font chain: Windows/Generic -> Mac standard
+# -----------------------------------------------------------------------------
+# 4. UI & GUI Appearance
+# -----------------------------------------------------------------------------
+
+# Font strategy: Cascadia Code for modern systems, Monaco as fallback for Mac.
 set guifont=Cascadia_Code:h12,Monaco:h12
 
 if has("gui_running")
-  set cursorline       # Highlight the current line
-  colorscheme evening  # Default high-contrast dark theme
-  set go-=l            # Hide GUI scrollbars
+  set cursorline       # Visually track the cursor position
+  colorscheme evening  # Built-in dark high-contrast theme
+  
+  # Clean UI: Remove scrollbars from the GUI window.
+  set go-=l
   set go-=L
   set go-=r
   set go-=R
 
-  # Unbind default system shortcuts to prevent conflicts with Vim mappings
   if has("gui_macvim")
+    # Release default MacVim menu shortcuts to allow re-mapping them in Vim.
     macmenu &File.Print key=<nop>
     macmenu &Edit.Find.Find… key=<nop>
     macmenu &File.Close key=<nop>
+    
+    # IME Smart Switching (MacVim): Reset input method to English on mode change.
+    set noimdisable
+    autocmd InsertEnter * set iminsert=1
+    autocmd InsertLeave * set iminsert=0
+    autocmd FocusGained * if mode() != 'i' && mode() != 'R' | set iminsert=0 | endif
   endif
 endif
 
+# -----------------------------------------------------------------------------
+# 5. Integrated Feature Configurations
+# -----------------------------------------------------------------------------
 
-# ==========================================
-# 5. Global Hotkeys (Direct Access)
-# ==========================================
-nnoremap <SPACE> <Nop>
-g:mapleader = " "
-
-# Quick Buffer Navigation
-nnoremap <silent> <C-l> :bnext<CR>
-nnoremap <silent> <C-h> :bprev<CR>
-
-# Search & File Control (Using mod: Cmd on Mac, Alt on Win)
-execute $"nnoremap <silent> <{mod}-w> :BD<CR>"
-execute $"nnoremap <silent> <{mod}-p> :call fzf#vim#gitfiles('', {{'options': '--no-preview --layout=reverse --info=inline'}})<CR>"
-execute $"nnoremap <silent> <{mod}-f> :call fzf#vim#ag('', {{'options': '--layout=reverse --info=inline'}})<CR>"
-
-# Tab Switching (1-9 for tabs, 0 for the 10th)
-for i in range(1, 9)
-  execute $"nmap <{mod}-{i}> <Plug>BufTabLine.Go({i})"
-endfor
-execute $"nmap <{mod}-0> <Plug>BufTabLine.Go(10)"
-
-
-# ==========================================
-# 6. Navigator Configuration (Leader Menu)
-# ==========================================
-# This menu appears when <Leader> (Space) is pressed.
-g:navigator_config = {
-  't': [':Fern . -drawer -toggle', 'Toggle File Tree'],
-  '/': ['<Plug>CommentaryLine', 'Toggle Comment'],
-  'g': {
-    'name': '+Git',
-    's': [':Git', 'Status Panel'],
-    'd': [':Gdiff', 'Diff Split'],
-    'w': [':Gwrite', 'Save & Stage (add)'],
-    'b': [':Git blame', 'Line Blame'],
-  },
-  'a': {
-    'name': '+AI (Copilot)',
-    'c': [':CopilotChatOpen', 'Open Chat'],
-    'f': [':CopilotChatFocus', 'Focus Chat'],
-    'r': [':CopilotChatReset', 'Reset Conversation'],
-  },
-  'l': {
-    'name': '+LSP',
-    'a': [':LspCodeAction', 'Quick Fix / Actions'],
-    'f': [':LspFormat', 'Format Document'],
-    'o': [':LspDocumentSymbol', 'Symbol Outline'],
-    'r': [':LspRename', 'Rename Symbol'],
-  },
-  'b': {
-    'name': '+Buffers',
-    'n': [':bnext', 'Next Buffer'],
-    'p': [':bprev', 'Previous Buffer'],
-    'd': [':BD', 'Kill Current Buffer'],
-  }
-}
-
-# Bind Leader key to trigger the discovery menu
-nnoremap <silent> <leader> :<C-u>Navigator g:navigator_config<CR>
-vnoremap <silent> <leader> :<C-u>NavigatorVisual g:navigator_config<CR>
-
-
-# ==========================================
-# 7. Language-Specific Settings
-# ==========================================
-# F# Setup
-autocmd FileType fsharp setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2 commentstring=//\ %s
-
-# Enhanced Go Highlighting
-g:go_highlight_operators = 1
-g:go_highlight_functions = 1
-g:go_highlight_function_parameters = 1
-g:go_highlight_function_calls = 1
-g:go_highlight_types = 1
-g:go_highlight_fields = 1
-g:go_highlight_build_constraints = 1
-g:go_highlight_generate_tags = 1
-g:go_highlight_variable_declarations = 1
-g:go_highlight_variable_assignments = 1
-
-
-# ==========================================
-# 8. Plugin Specific Settings
-# ==========================================
-# BufTabLine: Show buffer numbers for quick jumping
-g:buftabline_numbers = 2
-g:buftabline_show = 1
-g:buftabline_indicators = true
-
-# Fern: Sidebar appearance and behavior
-augroup FernCustom
-  autocmd!
-  autocmd FileType fern setlocal signcolumn=no foldcolumn=0 nu rnu
-  autocmd BufWinEnter * if &filetype == 'fern' | wincmd = | vertical resize 30 | endif
-augroup END
-g:fern#renderer#default#leaf_symbol      = '│  '
-g:fern#renderer#default#collapsed_symbol = '├─ '
-g:fern#renderer#default#expanded_symbol  = '└─ '
-g:fern#default_hidden = 1
-
-
-# ==========================================
-# 9. LSP (Native Vim9 Client)
-# ==========================================
+# --- LSP (yegappan/lsp) ---
 var lspOpts = {
   showDiagWithSign: true,
   semanticHighlight: true,
@@ -226,15 +146,12 @@ var lspOpts = {
 }
 autocmd User LspSetup call LspOptionsSet(lspOpts)
 
-# --- Dynamic Server Registration ---
+# Register LSP servers only if their binaries are detected in the system PATH.
 var lspServers: list<dict<any>> = []
-
-# Go (gopls)
 if executable('gopls')
   add(lspServers, { name: 'golang', filetype: ['go', 'gomod'], path: 'gopls', args: ['serve'], syncInit: v:true })
 endif
 
-# F# (fsautocomplete)
 var fsac_cmd = ''
 if executable('fsautocomplete')
   fsac_cmd = 'fsautocomplete'
@@ -250,58 +167,140 @@ if fsac_cmd != ''
     initializationOptions: { AutomaticWorkspaceInit: true, TooltipShowDocumentationLink: false }
   })
 endif
-
 if len(lspServers) > 0
   autocmd User LspSetup call LspAddServer(lspServers)
 endif
 
-# --- LSP Buffer Local Mappings ---
+# --- UI Plugins ---
+g:buftabline_numbers = 2 # Show buffer indices for number-key switching
+g:buftabline_show = 1
+g:buftabline_indicators = true
+
+augroup FernCustom
+  autocmd!
+  autocmd FileType fern setlocal signcolumn=no foldcolumn=0 nu rnu
+  # Auto-balance window sizes when opening the side drawer.
+  autocmd BufWinEnter * if &filetype == 'fern' | wincmd = | vertical resize 30 | endif
+augroup END
+g:fern#renderer#default#leaf_symbol      = '│  '
+g:fern#renderer#default#collapsed_symbol = '├─ '
+g:fern#renderer#default#expanded_symbol  = '└─ '
+g:fern#default_hidden = 1
+
+# --- AI & Debugging ---
+g:copilot_filetypes = { 'copilot-chat': v:false } # Prevent AI recursive chatter
+g:vimspector_enable_mappings = 'HUMAN'           # F5=Run, F10=Over, F11=Into
+
+# -----------------------------------------------------------------------------
+# 6. Keybindings System
+# -----------------------------------------------------------------------------
+
+# Set Leader key to Space
+nnoremap <SPACE> <Nop>
+g:mapleader = " "
+
+# --- Direct Access Hotkeys (Muscle Memory) ---
+# High-frequency actions remain instantly accessible.
+
+# Navigation
+nnoremap <silent> <C-l> :bnext<CR>
+nnoremap <silent> <C-h> :bprev<CR>
+nnoremap <silent> <C-t> :Fern . -drawer -toggle<CR>
+nnoremap <silent> <leader>t :Fern . -drawer<CR>
+
+# Search & OS Controls (Adapts to Mac/Windows via 'mod')
+execute $"nnoremap <silent> <{mod}-w> :BD<CR>"
+execute $"nnoremap <silent> <{mod}-p> :call fzf#vim#gitfiles('', {{'options': '--no-preview --layout=reverse --info=inline'}})<CR>"
+execute $"nnoremap <silent> <{mod}-f> :call fzf#vim#ag('', {{'options': '--layout=reverse --info=inline'}})<CR>"
+
+# Tab Switching (Cmd/Alt + 1-9)
+for i in range(1, 9)
+  execute $"nmap <{mod}-{i}> <Plug>BufTabLine.Go({i})"
+endfor
+execute $"nmap <{mod}-0> <Plug>BufTabLine.Go(10)"
+
+# Git Operations
+nnoremap <silent> <leader>gs <Cmd>Git<CR>
+nnoremap <silent> <leader>gd <Cmd>Gdiff<CR>
+nnoremap <silent> <leader>gw <Cmd>Gwrite<CR>
+nnoremap <silent> <leader>gb <Cmd>Git blame<CR>
+
+# AI & Commenting
+nnoremap <leader>ac :CopilotChatOpen<CR>
+nnoremap <leader>af :CopilotChatFocus<CR>
+nnoremap <leader>ar :CopilotChatReset<CR>
+vmap <leader>aa <Plug>CopilotChatAddSelection
+execute $"nmap <silent> <{mod}-/> <Plug>CommentaryLine"
+execute $"xmap <silent> <{mod}-/> <Plug>Commentary"
+
+# --- Discovery System (Which-Key) ---
+# Lower-frequency commands are organized into a searchable menu.
+
+g:which_key_use_floating_win = 1
+
+g:which_key_map = {
+  't': 'Open File Tree',
+  'g': { 'name': '+Git', 's': 'Status Panel', 'd': 'Diff Split', 'w': 'Save & Stage', 'b': 'Line Blame' },
+  'a': { 'name': '+AI (Copilot)', 'c': 'Open Chat', 'f': 'Focus Chat', 'r': 'Reset Conversation' },
+  'l': { 'name': '+LSP', 'a': 'Code Actions', 'f': 'Format Document', 'o': 'Symbol Outline' }
+}
+
+g:which_key_map_visual = {
+  'a': { 'name': '+AI', 'a': 'Add Selection to Chat' }
+}
+
+autocmd User vim-plug call which_key#register(' ', 'g:which_key_map')
+autocmd User vim-plug call which_key#register(' ', 'g:which_key_map_visual', 'v')
+
+nnoremap <silent> <leader> :<C-u>WhichKey '<Space>'<CR>
+vnoremap <silent> <leader> :<C-u>WhichKeyVisual '<Space>'<CR>
+
+# --- Context-Sensitive LSP Mappings ---
 def SetLspMappings()
+  # Definitions & Usage
   nnoremap <buffer> <silent> <C-]> <Cmd>LspGotoDefinition<CR>
   nnoremap <buffer> <silent> gy    <Cmd>LspGotoTypeDef<CR>
   nnoremap <buffer> <silent> gi    <Cmd>LspGotoImpl<CR>
   nnoremap <buffer> <silent> <C-g> <Cmd>LspShowReferences<CR>
+  
+  # Popups & Refactoring
   execute $"nnoremap <buffer> <silent> <{mod}-k> <Cmd>LspHover<CR>"
   execute $"nnoremap <buffer> <silent> <{mod}-r> <Cmd>LspRename<CR>"
+  
+  # Diagnostics
   nnoremap <buffer> <silent> [d <Cmd>LspDiag prevWrap<CR>
   nnoremap <buffer> <silent> ]d <Cmd>LspDiag nextWrap<CR>
   nnoremap <buffer> <silent> gl <Cmd>LspDiag current<CR>
+  
+  # Standardized Leader Maps
+  nnoremap <buffer> <silent> <leader>la <Cmd>LspCodeAction<CR>
+  nnoremap <buffer> <silent> <leader>lf <Cmd>LspFormat<CR>
+  nnoremap <buffer> <silent> <leader>lo <Cmd>LspDocumentSymbol<CR>
 enddef
 
 augroup LspKeybindings
   autocmd!
   autocmd User LspAttached SetLspMappings()
-  # Fallback for buffers opened before LSP attached
   autocmd FileType * if &buftype == '' | SetLspMappings() | endif
 augroup END
 
+# -----------------------------------------------------------------------------
+# 7. Filetype Specifics
+# -----------------------------------------------------------------------------
 
-# ==========================================
-# 10. File Watcher & Commentary
-# ==========================================
-# Automatically reload files when changed outside of Vim
-set autoread
-def SafeCheckTime()
-  if mode() == 'c' || &buftype != '' || expand('%') == '' | return | endif
-  checktime
-enddef
-augroup AutoReload
-  autocmd!
-  autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * SafeCheckTime()
-  autocmd FileChangedShellPost * echohl WarningMsg | echo "File updated externally" | echohl None
-augroup END
+# --- Go (vim-go) ---
+# Enable all syntax highlighting features for an IDE-like experience.
+g:go_highlight_operators = 1
+g:go_highlight_functions = 1
+g:go_highlight_function_parameters = 1
+g:go_highlight_function_calls = 1
+g:go_highlight_types = 1
+g:go_highlight_fields = 1
+g:go_highlight_build_constraints = 1
+g:go_highlight_generate_tags = 1
+g:go_highlight_variable_declarations = 1
+g:go_highlight_variable_assignments = 1
 
-# Commentary Fast Map (Cmd+/ on Mac, Alt+/ on Win)
-execute $"nmap <silent> <{mod}-/> <Plug>CommentaryLine"
-execute $"xmap <silent> <{mod}-/> <Plug>Commentary"
-
-
-# ==========================================
-# 11. AI & Debugger Extras
-# ==========================================
-# Send selected text to AI Chat
-vmap <leader>ca <Plug>CopilotChatAddSelection
-# Prevent Copilot from completing inside its own chat window
-g:copilot_filetypes = { 'copilot-chat': v:false }
-# Use 'HUMAN' keybindings for Vimspector (F5, F9, F10, etc.)
-g:vimspector_enable_mappings = 'HUMAN'
+# --- F# ---
+# F# local indentation and commenting overrides.
+autocmd FileType fsharp setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2 commentstring=//\ %s

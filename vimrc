@@ -208,12 +208,12 @@ nnoremap <silent> <C-h> :bprev<CR>
 nnoremap <silent> <C-t> :Fern . -drawer -toggle<CR>
 nnoremap <silent> <leader>t :Fern . -drawer<CR>
 
-# Search & OS Controls (Adapts to Mac/Windows via 'mod')
-execute $"nnoremap <silent> <{mod}-w> :BD<CR>"
-execute $"nnoremap <silent> <{mod}-p> :call fzf#vim#gitfiles('', {{'options': '--no-preview --layout=reverse --info=inline'}})<CR>"
-execute $"nnoremap <silent> <{mod}-f> :call fzf#vim#ag('', {{'options': '--layout=reverse --info=inline'}})<CR>"
+# Search
+nnoremap <silent> <leader><leader> :call fzf#vim#gitfiles('', {'options': '--no-preview --layout=reverse --info=inline'})<CR>
+nnoremap <silent> <leader>f :call fzf#vim#ag('', {'options': '--layout=reverse --info=inline'})<CR>
 
 # Tab Switching (Cmd/Alt + 1-9)
+execute $"nnoremap <silent> <{mod}-w> :BD<CR>"
 for i in range(1, 9)
   execute $"nmap <{mod}-{i}> <Plug>BufTabLine.Go({i})"
 endfor
@@ -237,8 +237,14 @@ execute $"xmap <silent> <{mod}-/> <Plug>Commentary"
 # Lower-frequency commands are organized into a searchable menu.
 
 g:which_key_use_floating_win = 1
+g:which_key_position = 'topleft'
 
 g:which_key_map = {
+  'SPC': 'Find Files',
+  'f': 'Find in Project Root',
+  '<F5>': 'Debug',
+  '<F8>': 'Run to Cursor',
+  '<F9>': 'Toggle Conditional Breakpoint',
   't': 'Open File Tree',
   'g': { 'name': '+Git', 's': 'Status Panel', 'd': 'Diff Split', 'w': 'Save & Stage', 'b': 'Line Blame' },
   'a': { 'name': '+AI (Copilot)', 'c': 'Open Chat', 'f': 'Focus Chat', 'r': 'Reset Conversation' },
@@ -249,8 +255,8 @@ g:which_key_map_visual = {
   'a': { 'name': '+AI', 'a': 'Add Selection to Chat' }
 }
 
-autocmd User vim-plug call which_key#register(' ', 'g:which_key_map')
-autocmd User vim-plug call which_key#register(' ', 'g:which_key_map_visual', 'v')
+which_key#register(' ', 'g:which_key_map')
+which_key#register(' ', 'g:which_key_map_visual', 'v')
 
 nnoremap <silent> <leader> :<C-u>WhichKey '<Space>'<CR>
 vnoremap <silent> <leader> :<C-u>WhichKeyVisual '<Space>'<CR>

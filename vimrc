@@ -117,6 +117,8 @@ if has("gui_running")
   set go-=L
   set go-=r
   set go-=R
+  set go-=T
+  set go-=m
 
   if has("gui_macvim")
     # Release default MacVim menu shortcuts to allow re-mapping them in Vim.
@@ -237,10 +239,10 @@ execute $"xmap <silent> <{mod}-/> <Plug>Commentary"
 # Lower-frequency commands are organized into a searchable menu.
 
 g:which_key_use_floating_win = 1
-g:which_key_position = 'topleft'
+g:which_key_floating_relative_win = 1
 
 g:which_key_map = {
-  'SPC': 'Find Files',
+  ' ': 'Find Files',
   'f': 'Find in Project Root',
   '<F5>': 'Debug',
   '<F8>': 'Run to Cursor',

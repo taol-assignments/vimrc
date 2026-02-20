@@ -236,6 +236,9 @@ nnoremap <silent> <leader>gd <Cmd>Gdiff<CR>
 nnoremap <silent> <leader>gw <Cmd>Gwrite<CR>
 nnoremap <silent> <leader>gb <Cmd>Git blame<CR>
 
+nmap ]h <Plug>(GitGutterNextHunk)
+nmap [h <Plug>(GitGutterPrevHunk)
+
 # AI & Commenting
 nnoremap <leader>ac :CopilotChatOpen<CR>
 nnoremap <leader>af :CopilotChatFocus<CR>

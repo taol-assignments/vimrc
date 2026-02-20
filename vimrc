@@ -57,6 +57,7 @@ call plug#begin(config_dir .. '/plugged')
   Plug 'ap/vim-buftabline'                 # Buffers as tabs at the top
   Plug 'qpkorr/vim-bufkill'                # Delete buffers without closing windows (:BD)
   Plug 'markonm/traces.vim'                # Real-time preview for :substitute
+  Plug 'airblade/vim-gitgutter'		   # Git diff indicators in the sign column
   
   # Menus & Discovery
   Plug 'liuchengxu/vim-which-key'          # Popup menu for keybinding discovery
@@ -70,7 +71,6 @@ call plug#begin(config_dir .. '/plugged')
   
   # AI & Debugging
   Plug 'github/copilot.vim'                # GitHub Copilot completion
-  Plug 'DanBradbury/copilot-chat.vim'      # Copilot Chat integration
   Plug 'puremourning/vimspector'           # Graphical debugger (DAP)
 call plug#end()
 
@@ -82,6 +82,10 @@ set nu rnu             # Hybrid line numbers: absolute for current, relative for
 set laststatus=2       # Always show the status line for better visibility
 set updatetime=300     # Responsiveness tweak for LSP highlights and AI triggers
 set autoread           # Automatically reload files when changed externally
+set signcolumn=yes     # Always show the sign column to prevent text shifting when diagnostics appear
+
+# Hide sign column in specific filetypes where they are not useful.
+autocmd FileType fugitive,fern setlocal signcolumn=no foldcolumn=0
 
 # Silent Operation
 set visualbell t_vb=   # Disable annoying visual/audio beeps
@@ -109,7 +113,16 @@ augroup END
 set guifont=Cascadia_Code:h12,Monaco:h12
 
 if has("gui_running")
-  set cursorline       # Visually track the cursor position
+  # Visually track the cursor position, but only in the active window to
+  # reduce distraction.
+  augroup CursorLine
+    au!
+    au VimEnter * setlocal cursorline
+    au WinEnter * setlocal cursorline
+    au BufWinEnter * setlocal cursorline
+    au WinLeave * setlocal nocursorline
+  augroup END
+
   colorscheme evening  # Built-in dark high-contrast theme
   
   # Clean UI: Remove scrollbars from the GUI window.
@@ -178,19 +191,15 @@ g:buftabline_numbers = 2 # Show buffer indices for number-key switching
 g:buftabline_show = 1
 g:buftabline_indicators = true
 
-augroup FernCustom
-  autocmd!
-  autocmd FileType fern setlocal signcolumn=no foldcolumn=0 nu rnu
-  # Auto-balance window sizes when opening the side drawer.
-  autocmd BufWinEnter * if &filetype == 'fern' | wincmd = | vertical resize 30 | endif
-augroup END
+# Auto-balance window sizes when opening the side drawer.
+autocmd BufWinEnter * if &filetype == 'fern' | wincmd = | vertical resize 30 | endif
+
 g:fern#renderer#default#leaf_symbol      = '│  '
 g:fern#renderer#default#collapsed_symbol = '├─ '
 g:fern#renderer#default#expanded_symbol  = '└─ '
 g:fern#default_hidden = 1
 
-# --- AI & Debugging ---
-g:copilot_filetypes = { 'copilot-chat': v:false } # Prevent AI recursive chatter
+# --- Debugging ---
 g:vimspector_enable_mappings = 'HUMAN'           # F5=Run, F10=Over, F11=Into
 
 # -----------------------------------------------------------------------------
@@ -308,6 +317,7 @@ g:go_highlight_build_constraints = 1
 g:go_highlight_generate_tags = 1
 g:go_highlight_variable_declarations = 1
 g:go_highlight_variable_assignments = 1
+autocmd FileType go setlocal tabstop=2 shiftwidth=2 softtabstop=2 commentstring=//\ %s
 
 # --- F# ---
 # F# local indentation and commenting overrides.

@@ -55,7 +55,7 @@ call plug#begin(config_dir .. '/plugged')
   
   # UI Enhancements
   Plug 'ap/vim-buftabline'                 # Buffers as tabs at the top
-  Plug 'qpkorr/vim-bufkill'                # Delete buffers without closing windows (:BD)
+  Plug 'qpkorr/vim-bufkill'                # Delete buffers without closing windows (:BW)
   Plug 'markonm/traces.vim'                # Real-time preview for :substitute
   Plug 'airblade/vim-gitgutter'		   # Git diff indicators in the sign column
   
@@ -224,7 +224,7 @@ nnoremap <silent> <leader><leader> :call fzf#vim#gitfiles('', {'options': '--no-
 nnoremap <silent> <leader>f :call fzf#vim#ag('', {'options': '--layout=reverse --info=inline'})<CR>
 
 # Tab Switching (Cmd/Alt + 1-9)
-execute $"nnoremap <silent> <{mod}-w> :BD<CR>"
+execute $"nnoremap <silent> <{mod}-w> :BW<CR>"
 for i in range(1, 9)
   execute $"nmap <{mod}-{i}> <Plug>BufTabLine.Go({i})"
 endfor
@@ -325,3 +325,9 @@ autocmd FileType go setlocal tabstop=2 shiftwidth=2 softtabstop=2 commentstring=
 # --- F# ---
 # F# local indentation and commenting overrides.
 autocmd FileType fsharp setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2 commentstring=//\ %s
+
+# -----------------------------------------------------------------------------
+# 8. Session
+# -----------------------------------------------------------------------------
+# Automatically save the session when leaving Vim
+autocmd VimLeavePre * if filereadable("./Session.vim") | mks! | endif

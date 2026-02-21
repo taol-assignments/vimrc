@@ -224,6 +224,7 @@ nnoremap <silent> <leader>t :Fern . -drawer<CR>
 # Search
 nnoremap <silent> <leader><leader> :call fzf#vim#gitfiles('', {'options': '--no-preview --layout=reverse --info=inline'})<CR>
 nnoremap <silent> <leader>f :call fzf#vim#ag('', {'options': '--layout=reverse --info=inline'})<CR>
+vnoremap <silent> <leader>f "zy:call fzf#vim#ag(@z, {'options': '--layout=reverse --info=inline'})<CR>
 
 # Tab Switching (Cmd/Alt + 1-9)
 execute $"nnoremap <silent> <{mod}-w> :BW<CR>"

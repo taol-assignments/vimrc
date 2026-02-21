@@ -74,3 +74,4 @@ tags
 copilot-chat/
 plugged/
 autoload/plug.vim
+vimrc.local

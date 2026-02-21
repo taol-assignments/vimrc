@@ -47,8 +47,10 @@ endif
 
 call plug#begin(config_dir .. '/plugged')
   # Project Navigation
+  Plug 'mhinz/vim-startify'                # Start screen
   Plug 'lambdalisue/vim-fern'              # Asynchronous file explorer
   Plug 'lambdalisue/vim-fern-git-status'   # Git status indicators for Fern
+  Plug 'lambdalisue/vim-fern-hijack'       # Make fern as the default browser
   
   # LSP & Code Intelligence
   Plug 'yegappan/lsp'                      # Native Vim9 LSP client
@@ -326,8 +328,28 @@ autocmd FileType go setlocal tabstop=2 shiftwidth=2 softtabstop=2 commentstring=
 # F# local indentation and commenting overrides.
 autocmd FileType fsharp setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2 commentstring=//\ %s
 
+# --- Help Files ---
+autocmd FileType help setlocal signcolumn=no nu rnu
+
 # -----------------------------------------------------------------------------
-# 8. Session
+# 8. Start Screen
 # -----------------------------------------------------------------------------
 # Automatically save the session when leaving Vim
-autocmd VimLeavePre * if filereadable("./Session.vim") | mks! | endif
+g:startify_session_persistence = 1
+
+# Automatically load Session.vim
+g:startify_session_autoload = 1
+
+# Default bookmark
+g:startify_bookmarks = [ {'c': $MYVIMRC} ]
+
+# -----------------------------------------------------------------------------
+# 9. Local & Private Overrides
+# -----------------------------------------------------------------------------
+# Load a local, machine-specific configuration file if it exists.
+# This file is NOT committed to Git and is used for private settings like
+# bookmarks, project-specific paths, or API keys.
+var local_config = expand('<sfile>:p:h') .. '/vimrc.local'
+if filereadable(local_config)
+  source `=local_config`
+endif

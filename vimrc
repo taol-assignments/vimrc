@@ -181,7 +181,16 @@ if fsac_cmd != ''
     filetype: ['fsharp'],
     path: fsac_cmd,
     args: [],
-    initializationOptions: {AutomaticWorkspaceInit: true, TooltipShowDocumentationLink: false}
+    initializationOptions: {
+      AutomaticWorkspaceInit: true,
+      Linter: true,
+      UnusedOpensAnalyzer: true,
+      UnusedDeclarationsAnalyzer: true,
+      UseSdkScripts: true,
+      SimplifyNameAnalyzer: true,
+      EnableReferenceCodeLens: true,
+      TooltipShowDocumentationLink: false
+    }
   })
 endif
 

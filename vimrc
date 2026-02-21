@@ -125,7 +125,7 @@ if has("gui_running")
     au WinLeave * setlocal nocursorline
   augroup END
 
-  colorscheme evening  # Built-in dark high-contrast theme
+  colorscheme desert
   
   # Clean UI: Remove scrollbars from the GUI window.
   set go-=l
@@ -180,13 +180,12 @@ if fsac_cmd != ''
     name: 'fsharp',
     filetype: ['fsharp'],
     path: fsac_cmd,
-    args: ['--adaptive-lsp-server-enabled'],
-    initializationOptions: { AutomaticWorkspaceInit: true, TooltipShowDocumentationLink: false }
+    args: [],
+    initializationOptions: {AutomaticWorkspaceInit: true, TooltipShowDocumentationLink: false}
   })
 endif
-if len(lspServers) > 0
-  autocmd User LspSetup call LspAddServer(lspServers)
-endif
+
+autocmd User LspSetup call LspAddServer(lspServers)
 
 # --- UI Plugins ---
 g:buftabline_numbers = 2 # Show buffer indices for number-key switching
@@ -329,8 +328,8 @@ autocmd FileType go setlocal tabstop=2 shiftwidth=2 softtabstop=2 commentstring=
 # F# local indentation and commenting overrides.
 autocmd FileType fsharp setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2 commentstring=//\ %s
 
-# --- Help Files ---
-autocmd FileType help setlocal signcolumn=no nu rnu
+# --- Help Files and Quick Fix ---
+autocmd FileType help,qf setlocal signcolumn=no nu rnu
 
 # -----------------------------------------------------------------------------
 # 8. Start Screen

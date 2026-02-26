@@ -166,7 +166,13 @@ autocmd User LspSetup call LspOptionsSet(lspOpts)
 # Register LSP servers only if their binaries are detected in the system PATH.
 var lspServers: list<dict<any>> = []
 if executable('gopls')
-  add(lspServers, { name: 'golang', filetype: ['go', 'gomod'], path: 'gopls', args: ['serve'], syncInit: v:true })
+  add(lspServers, {
+    name: 'golang',
+    filetype: ['go', 'gomod'],
+    path: 'gopls',
+    args: ['serve'],
+    syncInit: v:true
+  })
 endif
 
 var fsac_cmd = ''
@@ -191,6 +197,15 @@ if fsac_cmd != ''
       EnableReferenceCodeLens: true,
       TooltipShowDocumentationLink: false
     }
+  })
+endif
+
+if executable('omnisharp')
+  add(lspServers, {
+    name: 'csharp',
+    filetype: ['cs'],
+    path: 'omnisharp',
+    args: ['-z', '--languageserver', '--encoding', 'utf-8']
   })
 endif
 
@@ -219,9 +234,6 @@ g:vimspector_enable_mappings = 'HUMAN'           # F5=Run, F10=Over, F11=Into
 # Set Leader key to Space
 nnoremap <SPACE> <Nop>
 g:mapleader = " "
-
-# --- Direct Access Hotkeys (Muscle Memory) ---
-# High-frequency actions remain instantly accessible.
 
 # Navigation
 nnoremap <silent> <C-l> :bnext<CR>

@@ -247,6 +247,7 @@ nnoremap <silent> <leader>f :call fzf#vim#ag('', {'options': '--layout=reverse -
 vnoremap <silent> <leader>f "zy:call fzf#vim#ag(@z, {'options': '--layout=reverse --info=inline'})<CR>
 
 # Tab Switching (Cmd/Alt + 1-9)
+set hidden
 execute $"nnoremap <silent> <{mod}-w> :BW<CR>"
 for i in range(1, 9)
   execute $"nmap <{mod}-{i}> <Plug>BufTabLine.Go({i})"

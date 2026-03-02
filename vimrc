@@ -1,4 +1,4 @@
-vim9script
+ vim9script
 
 # =============================================================================
 # VIM CONFIGURATION (MacVim & Windows GVim)
@@ -85,6 +85,7 @@ set laststatus=2       # Always show the status line for better visibility
 set updatetime=300     # Responsiveness tweak for LSP highlights and AI triggers
 set autoread           # Automatically reload files when changed externally
 set signcolumn=yes     # Always show the sign column to prevent text shifting when diagnostics appear
+set smartindent        # Enable smart indent
 
 # Hide sign column in specific filetypes where they are not useful.
 autocmd FileType fugitive,fern setlocal signcolumn=no foldcolumn=0
@@ -104,7 +105,15 @@ enddef
 augroup AutoReload
   autocmd!
   autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * SafeCheckTime()
-  autocmd FileChangedShellPost * echohl WarningMsg | echo "File updated externally" | echohl None
+  autocmd FileChangedShellPost * {
+    echohl WarningMsg
+    echo "File updated externally"
+    echohl None
+
+    if filereadable(expand('%'))
+      edit
+    endif
+  }
 augroup END
 
 # -----------------------------------------------------------------------------
@@ -350,8 +359,20 @@ autocmd FileType go setlocal tabstop=2 shiftwidth=2 softtabstop=2 commentstring=
 # F# local indentation and commenting overrides.
 autocmd FileType fsharp setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2 commentstring=//\ %s
 
+# --- VimScript ---
+autocmd FileType vim setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2 commentstring=#\ %s
+
 # --- Help Files and Quick Fix ---
 autocmd FileType help,qf setlocal signcolumn=no nu rnu
+
+# --- Terminal ---
+autocmd TerminalOpen * setlocal foldcolumn=0 signcolumn=no nonu nornu
+
+autocmd BufEnter * {
+  if &buftype != 'terminal'
+    setlocal number< relativenumber< signcolumn< foldcolumn<
+  endif
+}
 
 # -----------------------------------------------------------------------------
 # 8. Start Screen

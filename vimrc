@@ -59,7 +59,8 @@ call plug#begin(config_dir .. '/plugged')
   Plug 'ap/vim-buftabline'                 # Buffers as tabs at the top
   Plug 'qpkorr/vim-bufkill'                # Delete buffers without closing windows (:BW)
   Plug 'markonm/traces.vim'                # Real-time preview for :substitute
-  Plug 'airblade/vim-gitgutter'		   # Git diff indicators in the sign column
+  Plug 'airblade/vim-gitgutter'		         # Git diff indicators in the sign column
+  Plug 'romainl/vim-cool'                  # Better handling of search highlighting
   
   # Menus & Discovery
   Plug 'liuchengxu/vim-which-key'          # Popup menu for keybinding discovery
@@ -86,6 +87,8 @@ set updatetime=300     # Responsiveness tweak for LSP highlights and AI triggers
 set autoread           # Automatically reload files when changed externally
 set signcolumn=yes     # Always show the sign column to prevent text shifting when diagnostics appear
 set smartindent        # Enable smart indent
+set shortmess-=S       # Show number of occurrences in search results (e.g., "[3/10]")
+set hlsearch           # Highlight search matches
 
 # Hide sign column in specific filetypes where they are not useful.
 autocmd FileType fugitive,fern setlocal signcolumn=no foldcolumn=0
@@ -190,6 +193,7 @@ if executable('fsautocomplete')
 elseif executable(expand('~/.dotnet/tools/fsautocomplete'))
   fsac_cmd = expand('~/.dotnet/tools/fsautocomplete')
 endif
+
 if fsac_cmd != ''
   add(lspServers, {
     name: 'fsharp',
@@ -216,6 +220,22 @@ if executable('omnisharp')
     path: 'omnisharp',
     args: ['-z', '--languageserver', '--encoding', 'utf-8']
   })
+endif
+
+var clangd_cmd = ''
+if executable('clangd')
+ clangd_cmd = 'clangd'
+elseif executable('clangd-20')
+ clangd_cmd = 'clangd-20'
+endif
+
+if clangd_cmd != ''
+  add(lspServers, {
+	  name: 'clangd',
+	  filetype: ['c', 'cpp'],
+	  path: clangd_cmd,
+	  args: ['--background-index']
+	})
 endif
 
 autocmd User LspSetup call LspAddServer(lspServers)
@@ -272,11 +292,7 @@ nnoremap <silent> <leader>gb <Cmd>Git blame<CR>
 nmap ]h <Plug>(GitGutterNextHunk)
 nmap [h <Plug>(GitGutterPrevHunk)
 
-# AI & Commenting
-nnoremap <leader>ac :CopilotChatOpen<CR>
-nnoremap <leader>af :CopilotChatFocus<CR>
-nnoremap <leader>ar :CopilotChatReset<CR>
-vmap <leader>aa <Plug>CopilotChatAddSelection
+# Commenting
 execute $"nmap <silent> <{mod}-/> <Plug>CommentaryLine"
 execute $"xmap <silent> <{mod}-/> <Plug>Commentary"
 
@@ -294,7 +310,6 @@ g:which_key_map = {
   '<F9>': 'Toggle Conditional Breakpoint',
   't': 'Open File Tree',
   'g': { 'name': '+Git', 's': 'Status Panel', 'd': 'Diff Split', 'w': 'Save & Stage', 'b': 'Line Blame' },
-  'a': { 'name': '+AI (Copilot)', 'c': 'Open Chat', 'f': 'Focus Chat', 'r': 'Reset Conversation' },
   'l': { 'name': '+LSP', 'a': 'Code Actions', 'f': 'Format Document', 'o': 'Symbol Outline' }
 }
 
@@ -368,6 +383,8 @@ autocmd FileType help,qf setlocal signcolumn=no nu rnu
 # --- Terminal ---
 autocmd TerminalOpen * setlocal foldcolumn=0 signcolumn=no nonu nornu
 
+# Restore line numbers and sign column when entering buffers that are not
+# terminals.
 autocmd BufEnter * {
   if &buftype != 'terminal'
     setlocal number< relativenumber< signcolumn< foldcolumn<

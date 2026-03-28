@@ -54,6 +54,7 @@ syntax keyword fsharpReserved sealed tailcall trait virtual
 
 # Match operator sequences like |>, ->, +, /
 syntax match fsharpOperator "[-!%&+*/<>=@^|~?]\+"
+syntax match fsharpOperator "(\s*[-!%&+*/<>=@^|~?]\+\s*)"
 
 # Special symbols
 syntax match fsharpOperator "::"
@@ -69,7 +70,7 @@ syntax match fsharpOperator "_"
 syntax match fsharpComment "\/\/.*$"
 
 # Block comment (* ... *)
-syntax region fsharpBlockComment start="(\*" end="\*)" contains=fsharpBlockComment
+syntax region fsharpBlockComment start="(\*\%()\)\@!" end="\*)" contains=fsharpBlockComment
 
 # Regular string ("...")
 syntax region fsharpString start='"' skip='\\\\\|\\"' end='"'

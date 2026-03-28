@@ -75,6 +75,13 @@ call plug#begin(config_dir .. '/plugged')
   # AI & Debugging
   Plug 'github/copilot.vim'                # GitHub Copilot completion
   Plug 'puremourning/vimspector'           # Graphical debugger (DAP)
+
+  # Documentss
+  if has("gui_macvim")
+    Plug 'yianwillis/macvimcdoc'
+  else
+    Plug 'yianwillis/vimcdoc'
+  endif
 call plug#end()
 
 # -----------------------------------------------------------------------------
@@ -271,9 +278,9 @@ nnoremap <silent> <C-t> :Fern . -drawer -toggle<CR>
 nnoremap <silent> <leader>t :Fern . -drawer<CR>
 
 # Search
-nnoremap <silent> <leader><leader> :call fzf#vim#gitfiles('', {'options': '--no-preview --layout=reverse --info=inline'})<CR>
-nnoremap <silent> <leader>f :call fzf#vim#ag('', {'options': '--layout=reverse --info=inline'})<CR>
-vnoremap <silent> <leader>f "zy:call fzf#vim#ag(@z, {'options': '--layout=reverse --info=inline'})<CR>
+nnoremap <silent> <leader><leader> <scriptcmd>fzf#vim#gitfiles('', {window: {width: 0.4, height: 0.6}, options: '--no-preview --layout=reverse --info=inline'}))<CR>
+nnoremap <silent> <leader>f <scriptcmd>fzf#vim#ag('', {options: '--layout=reverse --info=inline'})<CR>
+vnoremap <silent> <leader>f "zy<scriptcmd>fzf#vim#ag(@z, {options: '--layout=reverse --info=inline'})<CR>
 
 # Tab Switching (Cmd/Alt + 1-9)
 set hidden

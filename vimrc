@@ -274,8 +274,7 @@ g:mapleader = " "
 # Navigation
 nnoremap <silent> <C-l> :bnext<CR>
 nnoremap <silent> <C-h> :bprev<CR>
-nnoremap <silent> <C-t> :Fern . -drawer -toggle<CR>
-nnoremap <silent> <leader>t :Fern . -drawer<CR>
+nnoremap <silent> <leader>t :Fern . -drawer -toggle<CR>
 
 # Search
 nnoremap <silent> <leader><leader> <scriptcmd>fzf#vim#gitfiles('', {window: {width: 0.4, height: 0.6}, options: '--no-preview --layout=reverse --info=inline'}))<CR>
